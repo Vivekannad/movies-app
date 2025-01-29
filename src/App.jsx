@@ -1,52 +1,87 @@
-import React, { useState ,  useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import Hero from "./assets/public/hero.png"
 import Search from './components/Search'
+import Spinner from './components/Spinner';
+import MovieCard from './components/MovieCard';
 
-const API_BASE_URL ='https://api.themoviedb.org/3' ;
+const API_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
 const API_OPTIONS = {
-  method : 'GET', 
-  headers : {
-    accept : "application/json",
-    Authorization : `Bearer ${API_KEY}`
+  method: 'GET',
+  headers: {
+    accept: "application/json",
+    Authorization: `Bearer ${API_KEY}`
   }
 }
 
 const App = () => {
   const [search, setSearch] = useState("");
+  const [error, setError] = useState("");
+  const [movieList, setMovieList] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const fetchMovies = async() => {
-    const endpoint = `${API_BASE_URL}/discover/movie?sort_by=popularity=desc`;
+  const fetchMovies = async () => {
+    setLoading(true);
 
-    const response = await fetch(endpoint , API_OPTIONS);
+    try {
+      const endpoint = `${API_BASE_URL}/discover/movie?sort_by=popularity=desc`;
 
-    if(!response.ok){
-      throw new Error(`Error loading movies.`)
+      const response = await fetch(endpoint, API_OPTIONS);
+
+      if (!response.ok) {
+        throw new Error(`Error loading movies.`)
+      }
+      const data = await response.json();
+      if (data === 'False') {
+        setError(data.error || `Failed to fetch movies`);
+        setMovieList([]);
+        return;
+      }
+      setMovieList(data.results || []);
+      setLoading(false);
+      console.log(data);
+    } catch (error) {
+      console.error(`Error loading API , ${error.message}`);
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
-    const data = await response.json();
-    console.log(data);
   }
 
   useEffect(() => {
     fetchMovies();
-  },[]);
+    console.log(movieList)
+  }, []);
 
-    return (
-        <main>
-            <div className='pattern' />
-            <div className="wrapper">
-              <img src={Hero} alt="" className='w-sm mx-auto' />
-                <header>
-                    <h1 >
-                        Find the <span className='text-gradient'>Movies</span> you like wihtout any hassle.
-                    </h1>
-                </header>
-            </div>
-          <Search searchTerm = {search} setSearchTerm = {setSearch} />
-          <h1 className='text-white'>{search}</h1>
-        </main>
-    )
+  return (
+    <main>
+      <div className='pattern' />
+      <div className="wrapper">
+        <img src={Hero} alt="" className='w-sm mx-auto' />
+        <header>
+          <h1 >
+            Find the <span className='text-gradient'>Movies</span> you like wihtout any hassle.
+          </h1>
+          <Search searchTerm={search} setSearchTerm={setSearch} />
+        </header>
+
+
+        <section className='all-movies'>
+          <h2 className='mt-[20px]'>All Movies</h2>
+          {loading ?
+            <Spinner /> : error ?
+              <p className='text-red-600'>{error}</p> :
+              <ul>
+                {movieList.map(movie => (
+                  <MovieCard movie={movie} key={movie.id} />
+                ))}
+              </ul>
+          }
+        </section>
+      </div>
+    </main>
+  )
 }
 
 export default App
