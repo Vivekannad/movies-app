@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
+import {useDebounce} from "react-use"
 import Hero from "./assets/public/hero.png"
 import Search from './components/Search'
 import Spinner from './components/Spinner';
 import MovieCard from './components/MovieCard';
+import { updateSearchCount } from './appwrite';
 
-const API_BASE_URL = 'https://api.themoviedb.org/3';
+const API_BASE_URL = 'https://api.themoviedb.org/3'; 
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
 const API_OPTIONS = {
@@ -20,12 +22,17 @@ const App = () => {
   const [error, setError] = useState("");
   const [movieList, setMovieList] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [deboucedSearchTerm , setDeboucedSearchTerm] = useState('');
 
-  const fetchMovies = async () => {
+  //debouces the search term and waits for 500ms and prevents unnecessary API calls.
+  useDebounce(() => setDeboucedSearchTerm(search) , 500 , [search]);
+
+  const fetchMovies = async (query = '') => {
     setLoading(true);
 
     try {
-      const endpoint = `${API_BASE_URL}/discover/movie?sort_by=popularity=desc`;
+      const endpoint = query ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
+       : `${API_BASE_URL}/discover/movie?sort_by=popularity=desc`;
 
       const response = await fetch(endpoint, API_OPTIONS);
 
@@ -40,7 +47,10 @@ const App = () => {
       }
       setMovieList(data.results || []);
       setLoading(false);
-      console.log(data);
+      
+      if(query && data.results.length > 0) {
+        await updateSearchCount(query , data.results[0])
+      }
     } catch (error) {
       console.error(`Error loading API , ${error.message}`);
       setError(error.message);
@@ -50,9 +60,8 @@ const App = () => {
   }
 
   useEffect(() => {
-    fetchMovies();
-    console.log(movieList)
-  }, []);
+    fetchMovies(deboucedSearchTerm);
+  }, [deboucedSearchTerm]);
 
   return (
     <main>
