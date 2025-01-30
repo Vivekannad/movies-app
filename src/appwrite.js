@@ -15,22 +15,33 @@ export const updateSearchCount = async (searchTerm, movie) => {
         const result = await database.listDocuments(databaseId, collectionId, [
             Query.equal('searchTerm', searchTerm),
         ])
-        if(result.documents.length > 0){
+        if (result.documents.length > 0) {
             const doc = result.documents[0];
-            
-            await database.updateDocument(databaseId , collectionId , doc.$id , `` {
-                count : doc.count + 1,
-            }) 
 
-        }else {
-            await database.createDocument(databaseId , collectionId , ID.unique() , {
-                searchTerm , 
-                count : 1,
-                movie_id : movie.id ,
-                poster_url : `htpps://image.tmdb.org/t/p/w500${movie.poster_path}`
+            await database.updateDocument(databaseId, collectionId, doc.$id, {
+                count: doc.count + 1,
+            })
+
+        } else {
+            await database.createDocument(databaseId, collectionId, ID.unique(), {
+                searchTerm,
+                count: 1,
+                movie_id: movie.id,
+                poster_url: `https://image.tmdb.org/t/p/w500${movie.poster_path}`
             })
         }
-
-
     } catch (error) { console.error(error) }
+}
+
+export const getTrendingMovies = async () => {
+    try {
+        const result = await database.listDocuments(databaseId , collectionId , [
+            Query.limit(5),
+            Query.orderDesc("count")
+        ])
+
+
+        return result.documents;
+
+    }catch(err) {console.error(err)} 
 }
