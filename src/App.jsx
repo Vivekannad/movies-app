@@ -98,7 +98,7 @@ const App = () => {
                         <img src={movie.poster_url} alt="" />
                       </li>
                     ))}
-              </ul>
+             </ul>
             </section>
            )
       }
